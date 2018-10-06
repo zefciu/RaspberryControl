@@ -1,4 +1,8 @@
 import asyncio
+from protocol import from_binary, SetPin, Response
+import RPi.GPIO as GPIO
+
+pinsToControl = (12, 16, 18, 22, 32, 36, 40)
 
 class EchoServerClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
@@ -7,14 +11,24 @@ class EchoServerClientProtocol(asyncio.Protocol):
         self.transport = transport
 
     def data_received(self, data):
-        message = data.decode()
-        print('Data received: {!r}'.format(message))
+        message = from_binary(data)
+        if isinstance(message, SetPin):#compare classes
+            pin = message.pin
+            state = message.state
+            if pin in pinsToControl:
+                GPIO.output(pin, GPIO.HIGH) if state else GPIO.output(pin, GPIO.LOW)
+                response = Response(pin, state, True)
+            else:
+                response = Response(pin, state, False)
 
-        print('Send: {!r}'.format(message))
-        self.transport.write(data)
-
-        print('Close the client socket')
+        print('Send to client: {!r}'.format(response.get_binary()))
+        self.transport.write(response)
         self.transport.close()
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BOARD)
+for pin in pinsToControl:
+    GPIO.setup(pin, GPIO.OUT)
 
 loop = asyncio.get_event_loop()
 # Each client connection will create a new protocol instance
