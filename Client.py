@@ -3,7 +3,7 @@ import sys
 from protocol import SetPin, Response, from_binary
 
 pin_number = int(sys.argv[1])
-pin_status = sys.argv[2]
+pin_status = int(sys.argv[2])
 
 class EchoClientProtocol(asyncio.Protocol):
     def __init__(self, message, loop):

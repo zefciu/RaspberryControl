@@ -42,5 +42,5 @@ command_dict = {
 }
 
 def from_binary(data):
-    command = struct.unpack('B', data[0])
+    command = data[0]
     return command_dict[command].from_binary(data)
