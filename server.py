@@ -22,7 +22,7 @@ class EchoServerClientProtocol(asyncio.Protocol):
                 response = Response(pin, state, False)
 
         print('Send to client: {!r}'.format(response.get_binary()))
-        self.transport.write(response)
+        self.transport.write(response.get_binary())
         self.transport.close()
 
 GPIO.setwarnings(False)
