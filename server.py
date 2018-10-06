@@ -21,7 +21,7 @@ class EchoServerClientProtocol(asyncio.Protocol):
             else:
                 response = Response(pin, state, False)
 
-        print('Send to client: {!r}'.format(response.get_binary()))
+        print('Send to client: {}'.format(response))
         self.transport.write(response.get_binary())
         self.transport.close()
 

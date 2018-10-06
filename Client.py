@@ -15,7 +15,7 @@ class EchoClientProtocol(asyncio.Protocol):
         print('Data sent: {!r}'.format(self.message))
 
     def data_received(self, data):
-        response = from_binary()
+        response = from_binary(data)
         if isinstance(response, Response):
             print("Command: Set Pin command")
             print("Pin: {}".format(response.pin))

@@ -10,6 +10,9 @@ class SetPin():
         self.pin = pin
         self.state = state
 
+    def __str__(self):
+        return "set pin {} to {}".format(self.pin, self.state)
+
     def get_binary(self):
         return struct.pack('BBB', MessageType.SET_PIN, self.pin, self.state)
 
@@ -26,6 +29,9 @@ class Response():
         self.pin = pin
         self.state = state
         self.success = success
+
+    def __str__(self):
+        return "Pin {} was set to {}".format(self.pin, self.state)
 
     def get_binary(self):
         return struct.pack('BBB?', MessageType.RESPONSE, self.pin, self.state, self.success)
