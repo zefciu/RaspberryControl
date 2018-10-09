@@ -1,34 +1,67 @@
-import asyncio
 import sys
-from protocol import SetPin, Response, from_binary
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QMainWindow, QVBoxLayout, QGridLayout, QLabel, QGroupBox
+from PyQt5.QtGui import QPainter, QPixmap
+from settings import pin_names
 
-pin_number = int(sys.argv[1])
-pin_status = int(sys.argv[2])
+class Client(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        super().__init__()
+        self.title = 'RaspberryPi Controll'
+        self.left = 10
+        self.top = 10
+        self.width = 320
+        self.height = 100
+        self.initUI()
+        self.show()
 
-class EchoClientProtocol(asyncio.Protocol):
-    def __init__(self, message, loop):
-        self.message = message
-        self.loop = loop
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
 
-    def connection_made(self, transport):
-        transport.write(self.message)
-        print('Data sent: {!r}'.format(self.message))
+        self.createGridLayout()
 
-    def data_received(self, data):
-        response = from_binary(data)
-        if isinstance(response, Response):
-            print("Command: Set Pin command")
-            print("Pin: {}".format(response.pin))
-            print("Success: {}".format(response.state))
+        windowLayout = QVBoxLayout()
+        windowLayout.addWidget(self.horizontalGroupBox)
+        self.setLayout(windowLayout)
 
-    def connection_lost(self, exc):
-        print('The server closed the connection')
-        print('Stop the event loop')
-        self.loop.stop()
+    def createGridLayout(self):
+        self.horizontalGroupBox = QGroupBox("Grid")
+        layout = QGridLayout()
+        layout.setColumnStretch(1, 4)
+        layout.setColumnStretch(2, 4)
+        layout.setColumnStretch(3, 4)
+        layout.setColumnStretch(4, 4)
+        layout.setColumnStretch(5, 4)
+        layout.setColumnStretch(6, 4)
 
-loop = asyncio.get_event_loop()
-message = SetPin(pin_number, pin_status).get_binary()
-coro = loop.create_connection(lambda: EchoClientProtocol(message, loop),'192.168.0.103', 8888)
-loop.run_until_complete(coro)
-loop.run_forever()
-loop.close()
+        pin_image_raw =  QPixmap('/images/pin/png')
+        pin_image_rotated_raw = QPixmap('/images/pin_rotated.png')
+
+        for i in range(40):
+            pin_name = "pin{}".format(i+1) if (i+1) not in pin_names.keys() else pin_names[i+1]
+
+            if i%2 == 1:
+                button_column = 5
+                name_column = 4
+                picture_column = 3
+                pin_image = pin_image_raw
+            else:
+                button_column = 0
+                name_column = 1
+                picture_column = 2
+                pin_image = pin_image_rotated_raw
+
+            row = i//2
+
+            image_label = QLabel()
+
+            layout.addWidget(QPushButton('Toggle'), row, button_column)
+            layout.addWidget(QLabel(pin_name), row, name_column)
+            layout.addWidget(image_label.setPixmap(pin_image), row, picture_column)
+
+        self.horizontalGroupBox.setLayout(layout)
+
+app = QApplication(sys.argv)
+ex = Client()
+sys.exit(app.exec_())

@@ -1,8 +1,7 @@
 import asyncio
 from protocol import from_binary, SetPin, Response
 import RPi.GPIO as GPIO
-
-pinsToControl = (12, 16, 18, 22, 32, 36, 40)
+from settings import pinsToControl
 
 class EchoServerClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
