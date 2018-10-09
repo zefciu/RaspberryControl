@@ -1,7 +1,7 @@
 import asyncio
-from protocol import from_binary, SetPin, Response
+from protocol import from_binary, SetPin, Response, CheckPins, CheckPinsResponse
 import RPi.GPIO as GPIO
-from settings import pinsToControl
+from settings import pins_to_control
 
 class EchoServerClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
@@ -14,11 +14,19 @@ class EchoServerClientProtocol(asyncio.Protocol):
         if isinstance(message, SetPin):#compare classes
             pin = message.pin
             state = message.state
-            if pin in pinsToControl:
+            if pin in pins_to_control:
                 GPIO.output(pin, GPIO.HIGH) if state else GPIO.output(pin, GPIO.LOW)
                 response = Response(pin, state, True)
             else:
                 response = Response(pin, state, False)
+
+        if isinstance(message, CheckPins):
+            response = []
+            for i in range(1, 41):
+                if i in pins_to_control:
+                    response.append(GPIO.input(i))
+                else:
+                    response.append(0)
 
         print('Send to client: {}'.format(response))
         self.transport.write(response.get_binary())

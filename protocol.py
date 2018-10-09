@@ -4,6 +4,8 @@ import struct
 class MessageType(IntEnum):
     SET_PIN = 1
     RESPONSE = 2
+    CHECK_PINS_STATUS = 3
+    CHECK_PINS_RESPONSE = 4
 
 class SetPin():
     def __init__(self, pin, state):
@@ -41,6 +43,29 @@ class Response():
         _, pin, state, success = struct.unpack('BBB?', data)
         return cls(pin, state, success)
 
+
+class CheckPins():
+    def get_binary(self):
+        return struct.pack('B', MessageType.CHECK_PINS_STATUS)
+
+    @classmethod
+    def from_binary(cls, data):
+        return cls()
+
+class CheckPinsResponse():
+    def __init__(self, statuses):
+        self.statuses = statuses
+
+    def get_binary(self):
+        head = struct.pack('BB', MessageType.CHECK_PINS_RESPONSE, len(self.statuses))
+        body = bytes(self.statuses)
+        return head + body
+
+    @classmethod
+    def from_binary(cls, data):
+        _, size = struct.unpack('BB', data[0:2])
+        statuses = list(data[2:size+2])
+        return cls(statuses)
 
 command_dict = {
     MessageType.SET_PIN: SetPin,

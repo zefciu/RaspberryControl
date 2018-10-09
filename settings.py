@@ -1,4 +1,4 @@
-pinsToControl = (12, 16, 18, 22, 32, 36, 40)
+pins_to_control = (12, 16, 18, 22, 32, 36, 40)
 
 pin_names = {1 : "3,3V",
 	2 : "5V",
