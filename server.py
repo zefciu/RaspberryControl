@@ -34,7 +34,7 @@ class EchoServerClientProtocol(asyncio.Protocol):
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
-for pin in pinsToControl:
+for pin in pins_to_control:
     GPIO.setup(pin, GPIO.OUT)
 
 loop = asyncio.get_event_loop()
