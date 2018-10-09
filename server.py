@@ -21,12 +21,13 @@ class EchoServerClientProtocol(asyncio.Protocol):
                 response = Response(pin, state, False)
 
         if isinstance(message, CheckPins):
-            response = []
+            response_list = []
             for i in range(1, 41):
                 if i in pins_to_control:
-                    response.append(GPIO.input(i))
+                    response_list.append(GPIO.input(i))
                 else:
-                    response.append(0)
+                    response_list.append(0)
+            response = CheckPinsResponse(response_list)
 
         print('Send to client: {}'.format(response))
         self.transport.write(response.get_binary())
