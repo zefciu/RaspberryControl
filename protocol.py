@@ -70,6 +70,8 @@ class CheckPinsResponse():
 command_dict = {
     MessageType.SET_PIN: SetPin,
     MessageType.RESPONSE: Response,
+    MessageType.CHECK_PINS_STATUS: CheckPins,
+    MessageType.CHECK_PINS_RESPONSE: CheckPinsResponse,
 }
 
 def from_binary(data):

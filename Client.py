@@ -21,7 +21,7 @@ class Client(QDialog):
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((HOST, PORT))
-            message = CheckPins.get_binary()
+            message = CheckPins().get_binary()
             s.sendall(message)
             data = s.recv(1024)
         print('Received', repr(data))
