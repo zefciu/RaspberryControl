@@ -3,41 +3,65 @@ import socket
 from functools import partial
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QDialog, QVBoxLayout, QGridLayout, QLabel, QGroupBox
 from PyQt5.QtGui import QPainter, QPixmap
+from PyQt5.QtCore import QThread, pyqtSignal
 from settings import pin_names, pins_to_control
 from protocol import SetPin, Response, CheckPins, CheckPinsResponse, from_binary
 
-HOST = '192.168.0.103'
+HOST = '127.0.0.1'
 PORT = 8888
+
+
+class Communicate(QThread):
+    received = pyqtSignal(bytes)
+
+    def __init__(self, message):
+        self.message = message
+        self.HOST = HOST
+        self.PORT = PORT
+        super().__init__()
+
+    def run(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST, PORT))
+            s.sendall(self.message)
+            data = s.recv(1024)
+        self.received.emit(data)
 
 class Client(QDialog):
     def __init__(self):
         super().__init__()
-        self.HOST = '192.168.0.103'
-        self.PORT = 8888
         self.title = 'RaspberryPi Controll'
         self.left = 500
         self.top = 500
         self.width = 500
         self.height = 500
         self.bulb_image_off = QPixmap('images/pin_off.png')
-        self.bulb_image_on = QPixmap('images/pin_off.png')
+        self.bulb_image_on = QPixmap('images/pin_on.png')
+        self.threads = []
         self.initUI()
+        self.statuses = [0] * 40
         self.refresh_pin_statuses()
 
+    def parse_response(self, data):
+        response = from_binary(data)
+        print('Received: {}'.format(response))
+
     def communicate_with_server(self, message):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.HOST, self.PORT))
-            s.sendall(message)
-            data = s.recv(1024)
-        print('Received', repr(data))
-        return from_binary(data)
+        thread = Communicate(message)
+        thread.received.connect(self.parse_response)
+        thread.start()
+        self.threads.append(thread)
+
 
     def refresh_pin_statuses(self):
         response = self.communicate_with_server(CheckPins().get_binary())
-        if isinstance(response, CheckPinsResponse):
-            for pin, bulb in zip(response.statuses, self.bulbs):
-                bulb.setPixmap(self.bulb_image_on) if pin else bulb.setPixmap(self.bulb_image_off)
-            self.statuses = response.statuses
+        # if isinstance(response, CheckPinsResponse):
+        #     for pin, bulb in zip(response.statuses, self.bulbs):
+        #         print(pin)
+        #         print(bulb)
+        #         bulb.setPixmap(self.bulb_image_on if pin else self.bulb_image_off)
+        #         print(bulb.pixmap())
+        #     self.statuses = response.statuses
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -52,7 +76,7 @@ class Client(QDialog):
         self.show()
 
     def createGridLayout(self):
-        self.horizontalGroupBox = QGroupBox("Connected to {}:{}".format(self.HOST, self.PORT))
+        self.horizontalGroupBox = QGroupBox("Connected to {}:{}".format(HOST, PORT))
         layout = QGridLayout()
         layout.setColumnStretch(1, 1)
         layout.setColumnStretch(2, 1)
@@ -105,10 +129,10 @@ class Client(QDialog):
     def toggle_pin(self, pin):
         set_pin_to_high = not self.statuses[pin-1]
         control_pin = SetPin(pin, set_pin_to_high).get_binary()
-        response = self.communicate_with_server(control_pin).from_binary()
-        if response.success:
-            self.statuses[pin-1] = response.state
-            self.bulbs[pin-1].setPixmap(self.bulb_image_on if response.state else self.bulb_image_off)
+        self.communicate_with_server(control_pin)
+        # if response.success:
+        #     self.statuses[pin-1] = response.state
+        #     self.bulbs[pin-1].setPixmap(self.bulb_image_on if response.state else self.bulb_image_off)
 
 app = QApplication(sys.argv)
 ex = Client()

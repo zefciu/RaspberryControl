@@ -1,4 +1,5 @@
 import asyncio
+import time
 from protocol import from_binary, SetPin, Response, CheckPins, CheckPinsResponse
 import RPi.GPIO as GPIO
 from settings import pins_to_control
@@ -14,6 +15,7 @@ class EchoServerClientProtocol(asyncio.Protocol):
         if isinstance(message, SetPin):#compare classes
             pin = message.pin
             state = message.state
+            time.sleep(5)
             if pin in pins_to_control:
                 GPIO.output(pin, GPIO.HIGH) if state else GPIO.output(pin, GPIO.LOW)
                 response = Response(pin, state, True)
