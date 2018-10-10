@@ -1,5 +1,6 @@
 import sys
 import socket
+from functools import partial
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QDialog, QVBoxLayout, QGridLayout, QLabel, QGroupBox
 from PyQt5.QtGui import QPainter, QPixmap
 from settings import pin_names, pins_to_control
@@ -21,19 +22,22 @@ class Client(QDialog):
         self.bulb_image_off = QPixmap('images/pin_off.png')
         self.bulb_image_on = QPixmap('images/pin_off.png')
         self.initUI()
-        self.read_data_from_server()
+        self.refresh_pin_statuses()
 
-    def read_data_from_server(self):
+    def communicate_with_server(self, message):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.HOST, self.PORT))
-            message = CheckPins().get_binary()
             s.sendall(message)
             data = s.recv(1024)
         print('Received', repr(data))
-        response = from_binary(data)
+        return from_binary(data)
+
+    def refresh_pin_statuses(self):
+        response = self.communicate_with_server(CheckPins().get_binary())
         if isinstance(response, CheckPinsResponse):
             for pin, bulb in zip(response.statuses, self.bulbs):
                 bulb.setPixmap(self.bulb_image_on) if pin else bulb.setPixmap(self.bulb_image_off)
+            self.statuses = response.statuses
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -90,11 +94,21 @@ class Client(QDialog):
 
             layout.addWidget(bulb_label, row, bulb_column)
             if (i+1) in pins_to_control:
-                layout.addWidget(QPushButton('Toggle'), row, button_column)
+                toggle_button = QPushButton('Toggle')
+                toggle_button.clicked.connect(partial(self.toggle_pin, i+1))
+                layout.addWidget(toggle_button, row, button_column)
             layout.addWidget(QLabel(pin_name), row, name_column)
             layout.addWidget(image_label, row, picture_column)
 
         self.horizontalGroupBox.setLayout(layout)
+
+    def toggle_pin(self, pin):
+        set_pin_to_high = not self.statuses[pin-1]
+        control_pin = SetPin(pin, set_pin_to_high).get_binary()
+        response = self.communicate_with_server(control_pin).from_binary()
+        if response.success:
+            self.statuses[pin-1] = response.state
+            self.bulbs[pin-1].setPixmap(self.bulb_image_on if response.state else self.bulb_image_off)
 
 app = QApplication(sys.argv)
 ex = Client()
